@@ -1,1 +1,1 @@
-g++ -I src/include -L src/lib main.cpp -o a -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
+g++ -I src/include -L src/lib main.cpp -o a -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf

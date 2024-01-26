@@ -5,6 +5,8 @@
 #include<cstdlib>
 #include<ctime>
 #include<chrono>
+#include<thread>
+#include<SDL2/SDL_image.h>
 const int SCREEN_WIDTH=640;
 const int SCREEN_HEIGHT=480;
 const int GRID_SIZE=20;
@@ -49,36 +51,58 @@ SnakeGame::SnakeGame(){
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     font = TTF_OpenFont("Zebulon/Zebulon Condensed Bold Italic.otf",24);
     snake.push_back({0,20});
-    direction = 4; //Initial direction: right
+    direction = 4;  // Initial direction: right
     length = 1;
     score = 0;
     consecutiveFoodCount = 0;
     isBonusFoodActive = false;
     gameOver = false;
-    srand(time(NULL));
+    srand(time(NULL));  // Seed for random number generation
     spawnFood();
     showMenu();
-    int obstaclePositions[][2] = {
-        {320, 100}, {300, 100}, {280, 100}, {340, 100},
-        {280, 120}, {280, 140}, {280, 160}, {280, 180},
-        {300, 180}, {320, 180}, {340, 180}, {340, 200},
-        {340, 220}, {340, 240}, {340, 260}, {320, 260},
-        {300, 260}, {280, 260}, {60, 60}, {60, 80},
-        {60, 100}, {80, 60}, {100, 60}, {60, 420},
-        {80, 420}, {100, 420}, {60, 400}, {60, 380},
-        {580, 60}, {580, 80}, {580, 100}, {560, 60},
-        {540, 60}, {580, 420}, {560, 420}, {540, 420},
-        {580, 400}, {580, 380}
-    };
-    for (const auto& pos : obstaclePositions) {
-        obstacles.push_back({pos[0], pos[1]});
-    }
+    obstacles.push_back({320,100});
+    obstacles.push_back({300,100});
+    obstacles.push_back({280,100});
+    obstacles.push_back({340,100});
+    obstacles.push_back({280,120});
+    obstacles.push_back({280,140});
+    obstacles.push_back({280,160});
+    obstacles.push_back({280,180});
+    obstacles.push_back({300,180});
+    obstacles.push_back({320,180});
+    obstacles.push_back({340,180});
+    obstacles.push_back({340,200});
+    obstacles.push_back({340,220});
+    obstacles.push_back({340,240});
+    obstacles.push_back({340,260});
+    obstacles.push_back({320,260});
+    obstacles.push_back({300,260});
+    obstacles.push_back({280,260});
+    obstacles.push_back({60,60});
+    obstacles.push_back({60,80});
+    obstacles.push_back({60,100});
+    obstacles.push_back({80,60});
+    obstacles.push_back({100,60});
+    obstacles.push_back({60,420});
+    obstacles.push_back({80,420});
+    obstacles.push_back({100,420});
+    obstacles.push_back({60,400});
+    obstacles.push_back({60,380});
+    obstacles.push_back({580,60});
+    obstacles.push_back({580,80});
+    obstacles.push_back({580,100});
+    obstacles.push_back({560,60});
+    obstacles.push_back({540,60});
+    obstacles.push_back({580,420});
+    obstacles.push_back({560,420});
+    obstacles.push_back({540,420});
+    obstacles.push_back({580,400});
+    obstacles.push_back({580,380});
 }
 void SnakeGame::showMenu() {
     bool menuActive = true;
     SDL_Event menuEvent;
     bool renderTextOnce = true;
-    //Game starting icon 
     while (menuActive) {
         while (SDL_PollEvent(&menuEvent) != 0) {
             if (menuEvent.type == SDL_QUIT) {
@@ -86,24 +110,52 @@ void SnakeGame::showMenu() {
                 menuActive = false;
             } else if (menuEvent.type == SDL_KEYDOWN) {
                 if (menuEvent.key.keysym.sym == SDLK_s) {
+                    // Start the game
                     menuActive = false;
-                } else if (menuEvent.key.keysym.sym == SDLK_e){
+                } else if (menuEvent.key.keysym.sym == SDLK_e) {
+                    // Exit the game
                     gameOver = true;
                     menuActive = false;
                 }
             }
         }
         if (renderTextOnce) {
-            SDL_SetRenderDrawColor(renderer, 39, 144, 184, 1);
+            SDL_SetRenderDrawColor(renderer, 39, 144, 184, 1); // Black background
             SDL_RenderClear(renderer);
             renderText("Snake Game", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50);
             renderText("Press 'S' to start or 'E' to exit", SCREEN_WIDTH / 7, SCREEN_HEIGHT / 2);
             SDL_RenderPresent(renderer);
-            renderTextOnce = false;
+            //renderTextOnce = false;
         }
+    }
+    // Load image
+    SDL_Surface* imageSurface = IMG_Load("pictures/kabuto.jpg");
+    if (!imageSurface) {
+        std::cerr << "Failed to load image: " << IMG_GetError() << std::endl;
+        // Handle error (optional)
+    } else {
+        // Create texture from the image surface
+        SDL_Texture* imageTexture = SDL_CreateTextureFromSurface(renderer, imageSurface);
+        if (!imageTexture) {
+            std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
+            // Handle error (optional)
+        } else {
+            // Draw the image on the menu window
+            SDL_Rect imageRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, imageSurface->w, imageSurface->h };
+            SDL_RenderCopy(renderer, imageTexture, NULL, &imageRect);
+            SDL_RenderPresent(renderer);
+
+            // Wait for a short duration to display the image
+            //std::this_thread::sleep_for(std::chrono::milliseconds(2000)); // 2000 milliseconds (2 seconds)
+            // Cleanup
+            SDL_DestroyTexture(imageTexture);
+        }
+        // Free the surface
+        SDL_FreeSurface(imageSurface);
     }
 }
 bool SnakeGame::checkObstacleCollision() {
+    // Checking collision with obstacles
     for (const auto& obstacle : obstacles) {
         if (snake.front().x == obstacle.x && snake.front().y == obstacle.y) {
             return true;
@@ -126,13 +178,14 @@ void SnakeGame::run() {
         handleInput();
         update();
         render();
-        SDL_Delay(150);
+        SDL_Delay(150);  // Speed of the snake.
     }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 void SnakeGame::handleInput() {
+    // Input system or body movement system.
     const Uint8* keys = SDL_GetKeyboardState(NULL);
     if (keys[SDL_SCANCODE_UP] && direction != 2) {
         direction = 1;
@@ -148,12 +201,17 @@ void SnakeGame::update() {
     if (gameOver) {
         return;
     }
+    // Snake's body movement directions. These are connected with the controlling system.
     SnakeSegment newHead = snake.front();
     switch (direction) {
         case 1:
+            //if (newHead.y <= 0 ) newHead.y = SCREEN_HEIGHT-GRID_SIZE;
+            //else
             newHead.y -= GRID_SIZE;
             break;
         case 2:
+            //if (newHead.y >= SCREEN_HEIGHT-GRID_SIZE ) newHead.y = 0;
+            //else
                 newHead.y += GRID_SIZE;
             break;
         case 3:
@@ -167,6 +225,7 @@ void SnakeGame::update() {
             newHead.x += GRID_SIZE;
             break;
     }
+    // Check collision with obstacles
     if (checkObstacleCollision()) {
         renderText("Oops!! Collision with obstacle .", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
         renderText("Press Y to continue or N to exit.", SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2+40);
@@ -177,6 +236,7 @@ void SnakeGame::update() {
             if (keyEvent.type == SDL_QUIT) exit(1);
             else if (keyEvent.type == SDL_KEYDOWN) {
                 if (keyEvent.key.keysym.sym == SDLK_y) {
+                    // User pressed 'Y,continue the game but reduce 10 points
                     score -= 10;
                     snake.clear();
                     int x = 0;
@@ -190,6 +250,7 @@ void SnakeGame::update() {
                     break;
                 } 
                 else if (keyEvent.key.keysym.sym == SDLK_n) {
+                    // User pressed 'N', exit the game
                     gameOver = true;
                     break;
                 }
@@ -201,7 +262,7 @@ void SnakeGame::update() {
      if (newHead.x == food.x && newHead.y == food.y) {
         spawnFood();
         length++;
-        score += 10;
+        score += 10;  // Per food score increases by 10.
         consecutiveFoodCount++;
         if (consecutiveFoodCount % 5 == 0) {
             activateBonusFood();
@@ -209,8 +270,8 @@ void SnakeGame::update() {
     } 
     else if (isBonusFoodActive && newHead.x == bonusFood.x && newHead.y == bonusFood.y) {
         deactivateBonusFood();
-        score += 50;
-        consecutiveFoodCount = 0;
+        score += 50;  // Bonus score increases by 50.
+        consecutiveFoodCount = 0;  // Reset consecutive food count.
     }
     else {
         snake.pop_back();
@@ -226,32 +287,38 @@ void SnakeGame::update() {
     }
 }
 void SnakeGame::render(){
-    SDL_SetRenderDrawColor(renderer, 0, 100, 100, 50);
+    SDL_SetRenderDrawColor(renderer, 0, 100, 100, 50);  // Background's color
     SDL_RenderClear(renderer);
-     //walls
-    SDL_SetRenderDrawColor(renderer,167, 40, 207, 1);
+     // Draw walls
+    SDL_SetRenderDrawColor(renderer,167, 40, 207, 1);  // Red color
     // Top wall
     SDL_Rect topWall = { 0, 0, SCREEN_WIDTH,GRID_SIZE/2};
     SDL_RenderFillRect(renderer, &topWall);
     // Bottom wall
     SDL_Rect bottomWall = { 0, SCREEN_HEIGHT - GRID_SIZE/2, SCREEN_WIDTH, GRID_SIZE/2 };
     SDL_RenderFillRect(renderer, &bottomWall);
+    // Left wall
+    //SDL_Rect leftWall = { 0, 0, GRID_SIZE/2, SCREEN_HEIGHT };
+    //SDL_RenderFillRect(renderer, &leftWall);
+    // Right wall
+    //SDL_Rect rightWall = { SCREEN_WIDTH - GRID_SIZE/2, 0, GRID_SIZE/4, SCREEN_HEIGHT };
+    //SDL_RenderFillRect(renderer, &rightWall);
     SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255); // Snake's color
     for (const auto& segment : snake) {
         SDL_Rect rect = {segment.x, segment.y, GRID_SIZE, GRID_SIZE};
         SDL_RenderFillRect(renderer, &rect);
     }
     // Render obstacles
-    SDL_SetRenderDrawColor(renderer,182, 111, 82, 1);
+    SDL_SetRenderDrawColor(renderer,182, 111, 82, 1);  // Obstacle color (red)
     for (const auto& obstacle : obstacles) {
         SDL_Rect obstacleRect = {obstacle.x, obstacle.y, GRID_SIZE, GRID_SIZE};
         SDL_RenderFillRect(renderer, &obstacleRect);
     }
-    SDL_SetRenderDrawColor(renderer,192, 54, 8, 1);
+    SDL_SetRenderDrawColor(renderer,192, 54, 85, 1);// Food's color
     SDL_Rect foodRect = {food.x, food.y, GRID_SIZE, GRID_SIZE};
     SDL_RenderFillRect(renderer, &foodRect);
     if (isBonusFoodActive) {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);// Bonus Food's color (yellow)
         SDL_Rect bonusFoodRect = {bonusFood.x, bonusFood.y, GRID_SIZE, GRID_SIZE};
         SDL_RenderFillRect(renderer, &bonusFoodRect);
     }
@@ -265,11 +332,14 @@ void SnakeGame::render(){
     SDL_RenderPresent(renderer);
 }
 void SnakeGame::spawnFood() {
+    // Randomly spawning food for the snake
     int maxX = (SCREEN_WIDTH / GRID_SIZE - 1) * GRID_SIZE;
     int maxY = (SCREEN_HEIGHT / GRID_SIZE - 1) * GRID_SIZE;
     do {
         int randX = GRID_SIZE * (1 + rand() % (maxX / GRID_SIZE));
         int randY = GRID_SIZE * (1 + rand() % (maxY / GRID_SIZE));
+
+        // Checking if the randomly generated position coincides with any obstacle or side wall
         bool onObstacleOrWall = false;
         for (const auto& obstacle : obstacles) {
             if (randX == obstacle.x && randY == obstacle.y) {
@@ -284,11 +354,14 @@ void SnakeGame::spawnFood() {
     } while (true);
 }
 void SnakeGame::activateBonusFood() {
+    // Randomly spawn bonus food
     int maxX = (SCREEN_WIDTH / GRID_SIZE - 1) * GRID_SIZE;
     int maxY = (SCREEN_HEIGHT / GRID_SIZE - 1) * GRID_SIZE;
     do {
         int randX = GRID_SIZE * (1 + rand() % (maxX / GRID_SIZE));
         int randY = GRID_SIZE * (1 + rand() % (maxY / GRID_SIZE));
+
+        // Ensure that the bonus food does not overlap with regular food, obstacles, or side walls
         bool onObstacleOrWall = false;
         for (const auto& obstacle : obstacles) {
             if (randX == obstacle.x && randY == obstacle.y) {
@@ -322,7 +395,7 @@ bool SnakeGame::checkCollision() {
     return false;
 }
 void SnakeGame::renderText(const std::string& text, int x, int y) {
-    SDL_Color textColor = {255,255,255,255};
+    SDL_Color textColor = {255,255,255,255};  // White color
     SDL_Surface* textSurface = TTF_RenderText_Solid(font,text.c_str(), textColor);
     SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
     SDL_Rect textRect = {x,y,textSurface->w,textSurface->h};
